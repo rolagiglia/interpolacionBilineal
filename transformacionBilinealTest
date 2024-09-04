@@ -1,0 +1,88 @@
+package procesamientoPgm;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
+
+class transformacionBilinealTest {
+
+
+	
+	@Test
+    void testtransformacionBilinealTest1() throws Exception {
+        int[][] matrizOriginal = {
+            {1, 2},
+            {3, 4}
+        };
+        
+        int[][] expected = {
+            {1, 1, 2},
+            {2, 3, 3},
+            {3, 3, 4}
+        };
+        
+        int[][] result = transformacionBilineal.interpolacionBilineal(matrizOriginal, 3, 3);
+        
+        assertArrayEquals(expected, result);
+    }
+    
+    
+    
+    @Test
+    void testtransformacionBilinealMatrizNula() {
+    	try {
+    		transformacionBilineal.interpolacionBilineal(null, 2, 2);
+			
+		} catch (Exception e) {
+			return;
+		}
+		
+		fail();
+    }
+    
+    @Test
+    void testtransformacionBilinealDimensionesInvalidas() {
+        int[][] matrizOriginal = {
+            {1, 2},
+            {3, 4}
+        };
+        try {
+        	transformacionBilineal.interpolacionBilineal(matrizOriginal, -1, 2);
+			
+		} catch (Exception e) {
+			return;
+		}		
+		fail();
+    }
+    
+    @Test
+    void testtransformacionBilinealGranAmpliacion() throws Exception {
+        int[][] matrizOriginal = {
+            {1, 2},
+            {3, 4}
+        };
+        
+        int[][] result = transformacionBilineal.interpolacionBilineal(matrizOriginal, 100, 100);
+        
+        assertNotNull(result);
+        assertEquals(100, result.length);
+        assertEquals(100, result[0].length);
+    }
+    
+    @Test
+    void testtransformacionBilinealGranReduccion() throws Exception {
+        int[][] matrizOriginal = {
+            {1, 2, 3, 4, 5},
+            {6, 7, 8, 9, 10},
+            {11, 12, 13, 14, 15},
+            {16, 17, 18, 19, 20},
+            {21, 22, 23, 24, 25}
+        };
+        
+        int[][] result = transformacionBilineal.interpolacionBilineal(matrizOriginal, 2, 2);
+        
+        assertNotNull(result);
+        assertEquals(2, result.length);
+        assertEquals(2, result[0].length);
+    }
+}
