@@ -1,0 +1,162 @@
+package procesamientoPgm;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+
+public class transformacionBilineal {
+
+	public static void main(String[] args) throws Exception {
+		// TODO Auto-generated method stub
+		
+	int matriz[][];
+	matriz=leerPGM("C:\\imagenesPgm\\dog1024.pgm");
+	matriz=interpolacionBilineal(matriz, 200, 200);
+	grabarPGM("C:\\imagenesPgm\\output.pgm",matriz);
+
+	}
+	
+	
+	public static int[][] leerPGM(String nombreArchivo) throws IOException {
+	        BufferedReader br = new BufferedReader(new FileReader(nombreArchivo));
+	        
+	        String format = br.readLine(); // Lee el formato del archivo
+	        if (!format.equals("P2")) {
+	        	br.close();
+	            throw new IllegalArgumentException("El archivo PGM no es compatible.");
+	        }
+
+	        String line = br.readLine();
+	        while (line.startsWith("#")) {    // Ignora comentarios
+	            line = br.readLine(); 
+	        }
+
+	        String[] tamanio = line.split(" ");
+	        int ancho = Integer.parseInt(tamanio[0]);     //lee cantidad de columnas
+	        int alto = Integer.parseInt(tamanio[1]);	//lee cantidad de filas
+	        int maxVal = Integer.parseInt(br.readLine());   //lee el valor maximo
+
+	        int[][] matrizOriginaln = new int[alto][ancho];
+	 
+	        int i=0,j=0;
+	        	        
+	        while ((line = br.readLine()) != null) {   
+	        	//lee una linea y finaliza cuando llegue al final del archivo
+	            String[] pixeles = line.split("\\s+");  
+	            //divide la cadena que contiene una linea completa leia en las subcadenas 
+	            //que estan separadas por espacios
+	 
+	            for (String pixel : pixeles)	        
+	                if (!pixel.isEmpty() && Integer.parseInt(pixel)<=maxVal && Integer.parseInt(pixel)>=0 ) 
+	                //si el valor del pixel es valido continua
+	                {
+	                	if(i==alto) {  
+	                		//si llega aca es porque todavia hay contenido en el archivo y supero el tamano esperado
+	                		br.close();
+							throw new IOException("El archivo PGM no tiene el número esperado de píxeles.");
+						}	                
+	                	
+	                	matrizOriginaln[i][j]=Integer.parseInt(pixel);  
+	                	//guarda el valor del pixel en la matriz
+	               
+			            if(j==ancho-1) {  
+			            //cuando llega a la ultima columna de la fila
+							j=0;    //vuelve a la primera columna
+							i++;	//va a la siguiente fila
+						}
+			            else   //si no es la ultima columna , se mueve a la siguiente
+			            	j++;									
+	                }
+	                else {
+	                //si hay valores no validos termina
+	                	br.close();
+	                	throw new IOException("El archivo PGM tiene valores no validos.");
+	                }   
+	        }
+	        br.close();
+	        return matrizOriginaln;
+	    }
+	
+	 public static void grabarPGM(String nombreArchivo, int[][] matrizOriginaln) throws IOException {
+	        BufferedWriter bw = new BufferedWriter(new FileWriter(nombreArchivo));
+	        int alto = matrizOriginaln.length;
+	        int ancho = matrizOriginaln[0].length;
+
+	        bw.write("P2\n");
+	        bw.write(ancho + " " + alto + "\n");
+	        bw.write("255\n");
+
+	        for (int i = 0; i < alto; i++) {
+	            for (int j = 0; j < ancho; j++) {
+	                bw.write(matrizOriginaln[i][j] + " ");
+	            }
+	            bw.write("\n");
+	        }
+
+	        bw.close();
+	    }
+	 
+	 
+	 
+	 public static int[][] interpolacionBilineal(int[][] matrizOriginal, int anchoNuevo, int altoNuevo) throws Exception {
+	        
+	        if(matrizOriginal==null || anchoNuevo<=0 || altoNuevo<=0)
+	        	throw new Exception("Parametros no validos");
+	        
+	        int[][] nuevaMatriz = new int[altoNuevo][anchoNuevo];
+
+	        //calculo ancho y alto de la matriz original
+	        int anchoAnt = matrizOriginal[0].length;
+	        int altoAnt = matrizOriginal.length;
+	        	        
+	        float relacionX = (float) anchoAnt / anchoNuevo;  //factor de escalado x
+	        float relacionY = (float) altoAnt / altoNuevo; //factor de escalado y
+	        	        
+	        for (int i = 0; i < altoNuevo; i++) {   //recorro cada pixel de la nueva matriz de pixeles
+	            for (int j = 0; j < anchoNuevo; j++) {
+	                int x = (int) (relacionX * j);       
+	                int y = (int) (relacionY * i);       
+	                //obtuve las coordenadas del pixel que le corresponde en la matrizOriginal y
+	                //me quedo solo con la parte entera que sera el inmediato entero inferior
+	                //para asi tener el vecino de arriba a la izquierda en la matrizOriginal	                
+	                float dX = (relacionX * j) - x;  //obtengo la distancia decimal al entero inmediato inferior en x 
+	                float dY = (relacionY * i) - y;	 //obtengo la distancia decimal al entero inmediato inferior en y	                             
+	                //obtengo el valor de nivel de digital de los cuatro pixeles mas cercanos:
+	                int a = matrizOriginal[y][x];   
+	                //valor del pixel sup izq de la matrizOriginal	                
+	                int b = matrizOriginal[y][Math.min(x + 1, anchoAnt - 1)];  
+	                //valor del pixel a la derecha en la matrizOriginaln original, 
+	                //tto de bordes: si el siguiente se pasa del ancho devuelve el del borde derecho 	                
+	                int c = matrizOriginal[Math.min(y + 1, altoAnt - 1)][x];
+	                //el valor del pixel mas cercano hacia abajo izq
+	                //tto de bordes: si el siguiente se pasa del ancho devuelve el del borde derecho
+	                
+	                int d = matrizOriginal[Math.min(y + 1, altoAnt - 1)][Math.min(x + 1, anchoAnt - 1)];
+	                //obtiene el valor del pixel en direccion a la derecha y hacia abajo
+	                //con tto de bordes idem
+
+	                //los 4 puntos a,b,c,d se usan para calcular el valor del nuevo pixel por interpolacion	                
+	                int valorPixel = (int) (a * (1 - dX) * (1 - dY) +
+	                                        b * dX * (1 - dY) +
+	                                        c * dY * (1 - dX) +
+	                                        d * dX * dY);
+	             
+	                nuevaMatriz[i][j] = valorPixel;
+	            }
+	        }
+	        return nuevaMatriz;
+	 }
+	 
+	 public static void mostrarMatriz(int[][] matriz) {
+		 for(int i=0;i < matriz.length;i++) {
+			 for(int j=0; j<matriz[0].length;j++)
+				 System.out.print(matriz[i][j]+" ");
+			 System.out.println("");
+			 
+		 }
+	 }
+
+
+}
